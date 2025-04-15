@@ -1,91 +1,28 @@
-"use client"
-
-import { useEffect, useState } from "react"
+import { getCourses } from "@/actions/courses"
 import { Book, Clock, Users } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 
-interface Course {
-  id: string
-  title: string
-  description: string
-  level: string
-  duration: string
-  students: number
-  category: string
-  image: string
-}
+export default async function CoursesPage({
+  searchParams,
+}: {
+  searchParams: { category?: string; level?: string; page?: string; limit?: string }
+}) {
+  const page = searchParams.page ? Number.parseInt(searchParams.page) : 1
+  const limit = searchParams.limit ? Number.parseInt(searchParams.limit) : 9
 
-export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function fetchCourses() {
-      try {
-        const response = await fetch("/api/courses")
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch courses")
-        }
-
-        const data = await response.json()
-        setCourses(data)
-      } catch (err) {
-        console.error("Error fetching courses:", err)
-        setError("Gagal memuat kursus. Silakan coba lagi nanti.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchCourses()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-8 w-64" />
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-20" />
-            <Skeleton className="h-10 w-20" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="overflow-hidden flex flex-col">
-              <Skeleton className="w-full h-48" />
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-5 w-20" />
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-2/3 mb-4" />
-                <div className="flex flex-wrap gap-4">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-10 w-full" />
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const {
+    data: courses,
+    meta,
+    error,
+  } = await getCourses({
+    category: searchParams.category,
+    level: searchParams.level,
+    page,
+    limit,
+  })
 
   if (error) {
     return (
@@ -93,7 +30,9 @@ export default function CoursesPage() {
         <div className="flex flex-col items-center justify-center py-12">
           <h2 className="text-2xl font-bold mb-2">Terjadi Kesalahan</h2>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>Coba Lagi</Button>
+          <Button asChild>
+            <Link href="/courses">Coba Lagi</Link>
+          </Button>
         </div>
       </div>
     )
@@ -112,7 +51,11 @@ export default function CoursesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
           <Card key={course.id} className="overflow-hidden flex flex-col">
-            <img src={course.image || "/placeholder.svg"} alt={course.title} className="w-full h-48 object-cover" />
+            <img
+              src={course.image_url || "/placeholder.svg?height=200&width=400&query=course"}
+              alt={course.title}
+              className="w-full h-48 object-cover"
+            />
             <CardHeader>
               <div className="flex justify-between items-start">
                 <CardTitle className="text-xl">{course.title}</CardTitle>
@@ -128,11 +71,11 @@ export default function CoursesPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{course.duration}</span>
+                  <span>{course.duration} menit</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>{course.students} siswa</span>
+                  <span>{course.student_count || 0} siswa</span>
                 </div>
               </div>
             </CardContent>
@@ -144,6 +87,30 @@ export default function CoursesPage() {
           </Card>
         ))}
       </div>
+
+      {meta && meta.totalPages > 1 && (
+        <div className="flex justify-center mt-8">
+          <div className="flex gap-2">
+            {page > 1 && (
+              <Button variant="outline" asChild>
+                <Link href={`/courses?page=${page - 1}&limit=${limit}`}>Sebelumnya</Link>
+              </Button>
+            )}
+
+            {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <Button key={pageNum} variant={pageNum === page ? "default" : "outline"} asChild>
+                <Link href={`/courses?page=${pageNum}&limit=${limit}`}>{pageNum}</Link>
+              </Button>
+            ))}
+
+            {page < meta.totalPages && (
+              <Button variant="outline" asChild>
+                <Link href={`/courses?page=${page + 1}&limit=${limit}`}>Selanjutnya</Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import type { Session, User } from "@supabase/supabase-js"
+import { useToast } from "@/components/ui/use-toast"
 
 type AuthContextType = {
   user: User | null
@@ -13,7 +13,6 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
-  isPreviewMode: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -22,18 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
-  // Check if we're in preview mode (no real Supabase credentials)
-  const isPreviewMode =
-    !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  const { toast } = useToast()
 
   useEffect(() => {
-    // Skip auth in preview mode
-    if (isPreviewMode) {
-      setIsLoading(false)
-      return
-    }
-
     const getSession = async () => {
       try {
         const {
@@ -43,12 +33,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error("Error getting session:", error)
+          toast({
+            title: "Authentication Error",
+            description: "There was a problem with the authentication service. Please try again later.",
+            variant: "destructive",
+          })
         }
 
         setSession(session)
         setUser(session?.user ?? null)
       } catch (error) {
         console.error("Unexpected error during getSession:", error)
+        toast({
+          title: "System Error",
+          description: "An unexpected error occurred. Please try again later.",
+          variant: "destructive",
+        })
       } finally {
         setIsLoading(false)
       }
@@ -56,24 +56,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-    })
+    try {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+      })
 
-    return () => {
-      subscription.unsubscribe()
+      return () => {
+        subscription.unsubscribe()
+      }
+    } catch (error) {
+      console.error("Error setting up auth state change listener:", error)
+      setIsLoading(false)
+      return () => {}
     }
-  }, [isPreviewMode])
+  }, [toast])
 
   const signIn = async (email: string, password: string) => {
-    if (isPreviewMode) {
-      return { error: null } // Mock successful sign in for preview
-    }
-
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error }
@@ -84,10 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string) => {
-    if (isPreviewMode) {
-      return { error: null } // Mock successful sign up for preview
-    }
-
     try {
       const { error } = await supabase.auth.signUp({ email, password })
       return { error }
@@ -98,10 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    if (isPreviewMode) {
-      return // No-op for preview mode
-    }
-
     try {
       await supabase.auth.signOut()
     } catch (error) {
@@ -116,7 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
-    isPreviewMode,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

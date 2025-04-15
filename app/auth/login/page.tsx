@@ -1,10 +1,4 @@
 import { LoginForm } from "@/components/auth/login-form"
-import type { Metadata } from "next"
-
-export const metadata: Metadata = {
-  title: "Login | Learning Dashboard",
-  description: "Login to your account to continue learning",
-}
 
 export default function LoginPage() {
   return (

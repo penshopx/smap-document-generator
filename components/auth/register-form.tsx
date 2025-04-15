@@ -1,51 +1,36 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
+import Link from "next/link"
+import { signUp } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2 } from "lucide-react"
+import { AlertCircle, CheckCircle2 } from "lucide-react"
 
 export function RegisterForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const { signUp } = useAuth()
-  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  async function handleSubmit(formData: FormData) {
     setIsLoading(true)
     setError(null)
-    setSuccessMessage(null)
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      setIsLoading(false)
-      return
-    }
+    setSuccess(null)
 
     try {
-      const { error, data } = await signUp(email, password)
-      if (error) {
-        setError(error.message)
-      } else {
-        setSuccessMessage("Registrasi berhasil! Silakan periksa email Anda untuk verifikasi.")
-        setTimeout(() => {
-          router.push("/auth/login")
-        }, 3000)
+      const result = await signUp(formData)
+
+      if (result?.error) {
+        setError(result.error)
+      } else if (result?.success) {
+        setSuccess(result.success)
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred during registration")
+    } catch (error) {
+      setError("An unexpected error occurred. Please try again.")
+      console.error(error)
     } finally {
       setIsLoading(false)
     }
@@ -54,71 +39,53 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Daftar</CardTitle>
-        <CardDescription>Buat akun baru untuk memulai perjalanan pembelajaran Anda</CardDescription>
+        <CardTitle className="text-2xl">Daftar</CardTitle>
+        <CardDescription>Buat akun baru untuk memulai pembelajaran</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {successMessage && (
-            <Alert>
-              <AlertDescription>{successMessage}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="nama@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Memproses...
-              </>
-            ) : (
-              "Daftar"
-            )}
-          </Button>
-          <div className="text-center text-sm">
-            Sudah punya akun?{" "}
-            <Button variant="link" className="p-0 h-auto" onClick={() => router.push("/auth/login")}>
-              Masuk
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="mb-4 bg-green-50 border-green-200">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-600">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        {!success && (
+          <form action={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Nama Lengkap</Label>
+              <Input id="fullName" name="fullName" placeholder="Nama Lengkap" required disabled={isLoading} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" placeholder="nama@email.com" required disabled={isLoading} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required disabled={isLoading} minLength={6} />
+              <p className="text-xs text-muted-foreground">Password minimal 6 karakter</p>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Memproses..." : "Daftar"}
             </Button>
-          </div>
-        </CardFooter>
-      </form>
+          </form>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-center">
+        <p className="text-sm text-muted-foreground">
+          Sudah punya akun?{" "}
+          <Link href="/auth/login" className="text-primary hover:underline">
+            Masuk
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   )
 }

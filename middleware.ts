@@ -1,33 +1,47 @@
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+// List of paths that don't require authentication
+const publicPaths = ["/auth/login", "/auth/register", "/auth/forgot-password"]
 
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+  const supabase = createMiddlewareClient({ req: request, res: response })
+
+  // Refresh session if expired
+  await supabase.auth.getSession()
+
+  // Get the current path
+  const path = request.nextUrl.pathname
+
+  // Check if the path is public
+  const isPublicPath = publicPaths.some((publicPath) => path.startsWith(publicPath))
+
+  // Get the session
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // Jika tidak ada sesi dan mencoba mengakses rute yang dilindungi
-  if (!session && !req.nextUrl.pathname.startsWith("/auth")) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = "/auth/login"
-    redirectUrl.searchParams.set("redirectedFrom", req.nextUrl.pathname)
+  // If the path requires authentication and there's no session, redirect to login
+  if (!isPublicPath && !session) {
+    const redirectUrl = new URL("/auth/login", request.url)
+    redirectUrl.searchParams.set("redirect", path)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Jika sudah login dan mencoba mengakses halaman auth
-  if (session && req.nextUrl.pathname.startsWith("/auth")) {
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = "/"
-    return NextResponse.redirect(redirectUrl)
+  // If the user is logged in and trying to access a public path, redirect to dashboard
+  if (isPublicPath && session) {
+    return NextResponse.redirect(new URL("/", request.url))
   }
 
-  return res
+  return response
 }
 
+// Only run middleware on specific paths
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg).*)"],
+  matcher: [
+    // Protect all routes except public ones
+    "/((?!_next/static|_next/image|favicon.ico|api/public).*)",
+  ],
 }

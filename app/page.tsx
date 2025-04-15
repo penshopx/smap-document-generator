@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StudyProgressTracker } from "@/components/study-progress-tracker"
-import { PreviewModeBanner } from "@/components/preview-mode-banner"
 
 // Mock data for dashboard
 const userData = {
@@ -76,7 +75,6 @@ const userData = {
 export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6">
-      <PreviewModeBanner />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold">Selamat Datang, {userData.name}</h1>

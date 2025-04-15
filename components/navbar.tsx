@@ -26,7 +26,14 @@ export function Navbar() {
             </Link>
           </nav>
         </div>
-        <MobileNav />
+        <MobileNav
+          items={[
+            { label: "Kursus", href: "/courses" },
+            { label: "Forum", href: "/forum" },
+            { label: "Sumber Daya", href: "/resources" },
+            { label: "Leaderboard", href: "/leaderboard" },
+          ]}
+        />
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <Link href="/search">
