@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { createAdminSupabaseClient } from "./supabase"
 
 // User related functions
 export async function getUserProfile(userId: string) {
@@ -306,5 +307,78 @@ export async function updateUserSettings(userId: string, settings: any) {
 
     if (error) throw error
     return data
+  }
+}
+
+// Admin functions using service role key
+export async function adminGetAllUsers() {
+  try {
+    const adminSupabase = createAdminSupabaseClient()
+    const { data, error } = await adminSupabase.from("users").select("*")
+
+    if (error) throw error
+    return { data }
+  } catch (error: any) {
+    console.error("Error fetching all users:", error)
+    return { error: error.message }
+  }
+}
+
+export async function adminGetSystemStats() {
+  try {
+    const adminSupabase = createAdminSupabaseClient()
+
+    // Get users count
+    const { count: usersCount, error: usersError } = await adminSupabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+
+    if (usersError) throw usersError
+
+    // Get courses count
+    const { count: coursesCount, error: coursesError } = await adminSupabase
+      .from("courses")
+      .select("*", { count: "exact", head: true })
+
+    if (coursesError) throw coursesError
+
+    // Get enrollments count
+    const { count: enrollmentsCount, error: enrollmentsError } = await adminSupabase
+      .from("enrollments")
+      .select("*", { count: "exact", head: true })
+
+    if (enrollmentsError) throw enrollmentsError
+
+    return {
+      data: {
+        usersCount,
+        coursesCount,
+        enrollmentsCount,
+      },
+    }
+  } catch (error: any) {
+    console.error("Error fetching system stats:", error)
+    return { error: error.message }
+  }
+}
+
+export async function adminDeleteUser(userId: string) {
+  try {
+    const adminSupabase = createAdminSupabaseClient()
+
+    // Delete user data from database
+    const { error: dbError } = await adminSupabase.from("users").delete().eq("id", userId)
+
+    if (dbError) throw dbError
+
+    // Delete user from auth
+    const { error: authError } = await adminSupabase.auth.admin.deleteUser(userId)
+
+    if (authError) throw authError
+
+    return { success: true }
+  } catch (error: any) {
+    console.error(`Error deleting user ${userId}:`, error)
+    return { error: error.message }
   }
 }

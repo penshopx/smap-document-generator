@@ -1,41 +1,67 @@
 import { createClient } from "@supabase/supabase-js"
+import { cookies } from "next/headers"
+import type { Database } from "./database.types"
 
-// Check if environment variables are available
+// URL validation helper
+const isValidUrl = (url: string) => {
+  try {
+    new URL(url)
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
+// Environment variable validation
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Validate environment variables
-if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined. Please set this environment variable.")
+if (!supabaseUrl || !isValidUrl(supabaseUrl)) {
+  console.error("Invalid or missing NEXT_PUBLIC_SUPABASE_URL")
 }
 
 if (!supabaseAnonKey) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined. Please set this environment variable.")
+  console.error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY")
 }
 
-// Create Supabase client for client-side usage
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseServiceKey) {
+  console.warn("Missing SUPABASE_SERVICE_ROLE_KEY - some admin functions may not work")
+}
 
-// Create Supabase admin client for server-side operations that need elevated privileges
-export const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null
-
-// Helper function for server components
+// Create a Supabase client for server components
 export const createServerSupabaseClient = async () => {
-  try {
-    const { cookies } = await import("next/headers")
-    const cookieStore = cookies()
+  const cookieStore = cookies()
 
-    return createClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
+  return createClient<Database>(supabaseUrl || "", supabaseAnonKey || "", {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value
       },
-    })
-  } catch (error) {
-    console.error("Error creating server Supabase client:", error)
-    // Return regular client as fallback
-    return supabase
-  }
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options })
+      },
+      remove(name: string, options: any) {
+        cookieStore.set({ name, value: "", ...options })
+      },
+    },
+  })
 }
+
+// Create a Supabase client with service role for admin operations
+export const createAdminSupabaseClient = () => {
+  if (!supabaseServiceKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not defined")
+  }
+
+  return createClient<Database>(supabaseUrl || "", supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+}
+
+// Create a Supabase client for client components
+export const supabase = createClient<Database>(supabaseUrl || "", supabaseAnonKey || "")

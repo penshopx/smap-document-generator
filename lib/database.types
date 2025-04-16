@@ -1,0 +1,382 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      courses: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          duration: number | null
+          id: string
+          image_url: string | null
+          instructor_id: string | null
+          level: string | null
+          student_count: number | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          id?: string
+          image_url?: string | null
+          instructor_id?: string | null
+          level?: string | null
+          student_count?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          id?: string
+          image_url?: string | null
+          instructor_id?: string | null
+          level?: string | null
+          student_count?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOne: true
+            isOther: false
+            relation: "users"
+            schema: "public"
+            table: "users"
+          }
+        ]
+      }
+      discussions: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string
+          id: string
+          is_hot: boolean | null
+          is_pinned: boolean | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          views: number | null
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_hot?: boolean | null
+          is_pinned?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          views?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_hot?: boolean | null
+          is_pinned?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussions_user_id_fkey"
+            columns: ["user_id"]
+            isOne: true
+            isOther: false
+            relation: "users"
+            schema: "public"
+            table: "users"
+          }
+        ]
+      }
+      enrollments: {
+        Row: {
+          completed: boolean | null
+          course_id: string | null
+          created_at: string
+          id: string
+          last_accessed: string | null
+          progress: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          last_accessed?: string | null
+          progress?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          last_accessed?: string | null
+          progress?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOne: true
+            isOther: false
+            relation: "courses"
+            schema: "public"
+            table: "courses"
+          },
+          {
+            foreignKeyName: "enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOne: true
+            isOther: false
+            relation: "users"
+            schema: "public"
+            table: "users"
+          }
+        ]
+      }
+      modules: {
+        Row: {
+          content: string | null
+          course_id: string | null
+          created_at: string
+          duration: number | null
+          id: string
+          sort_order: number | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          course_id?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          sort_order?: number | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          course_id?: string | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          sort_order?: number | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_course_id_fkey"
+            columns: ["course_id"]
+            isOne: true
+            isOther: false
+            relation: "courses"
+            schema: "public"
+            table: "courses"
+          }
+        ]
+      }
+      replies: {
+        Row: {
+          content: string | null
+          created_at: string
+          discussion_id: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          discussion_id?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          discussion_id?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replies_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOne: true
+            isOther: false
+            relation: "discussions"
+            schema: "public"
+            table: "discussions"
+          },
+          {
+            foreignKeyName: "replies_user_id_fkey"
+            columns: ["user_id"]
+            isOne: true
+            isOther: false
+            relation: "users"
+            schema: "public"
+            table: "users"
+          }
+        ]
+      }
+      resources: {
+        Row: {
+          category: string | null
+          course_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          size: string | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          course_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          size?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          course_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          size?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_course_id_fkey"
+            columns: ["course_id"]
+            isOne: true
+            isOther: false
+            relation: "courses"
+            schema: "public"
+            table: "courses"
+          },
+          {
+            foreignKeyName: "resources_user_id_fkey"
+            columns: ["user_id"]
+            isOne: true
+            isOther: false
+            relation: "users"
+            schema: "public"
+            table: "users"
+          }
+        ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          company: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          job_title: string | null
+          location: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          job_title?: string | null
+          location?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          job_title?: string | null
+          location?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      increment_discussion_views: {
+        Args: {
+          discussion_id: string
+        }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
